@@ -1,0 +1,9 @@
+---
+version: '3.4'
+services:
+  elastic:
+    build:
+      context: ./src
+    image: chinkitp/elastic-demo:latest
+    ports:
+      - "9200:9200"
