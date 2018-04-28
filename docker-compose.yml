@@ -14,5 +14,5 @@ services:
     image: chinkitp/elastic-dotnet-client:latest
     volumes:
       - ./client/src:/code
-    entrypoint: sh
+    #entrypoint: sh
     tty: true
