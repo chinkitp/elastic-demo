@@ -3,7 +3,16 @@ version: '3.4'
 services:
   elastic:
     build:
-      context: ./src
-    image: chinkitp/elastic-demo:latest
+      context: ./server
+    image: chinkitp/elastic-server:latest
     ports:
       - "9200:9200"
+
+  client:
+    build: 
+      context: ./client 
+    image: chinkitp/elastic-dotnet-client:latest
+    volumes:
+      - ./client/src:/code
+    entrypoint: sh
+    tty: true
