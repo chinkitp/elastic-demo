@@ -1,73 +1,56 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections;
 using Nest;
 using System.Threading;
 using System.Linq;
 using Newtonsoft.Json;
+using System.IO.MemoryMappedFiles;
+using System.Diagnostics;
 
-
-namespace ingestor
+namespace Ingestor
 {
-    public class EpgProperties : Dictionary<string, object>
-    {
-
-    }
-
-    public class EpgVertex
-    {
-        public string Id {get;}
-        public string Label {get;}
-        public EpgProperties EpgProperties {get;}
-
-        public EpgVertex(string id, string label, EpgProperties epgProperties)
-        {
-            Id = id;
-            Label = label;
-            EpgProperties = epgProperties;
-        }
-    }
-
-
     class Program
     {
         static void Main(string[] args)
         {
-            ElasticClient client = new ElasticClient(new Uri("http://localhost:9200"));
+            // var filePath = "/graph-data";
+            // var fileExtensionsToRead = "json";
+            // var elasticUri = "http://elastic:9200";
+            var filePath = "./stackoverflow-sample/nodes";
+            var fileExtensionsToRead = ".json";
+            var elasticUri = "http://localhost:9200";
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();   
+
+            var vertices = FileReader.ReadLines(filePath,fileExtensionsToRead)
+                .Select(v => JsonConvert.DeserializeObject<EpgVertex>(v));
+
+            ElasticClient client = new ElasticClient(new Uri(elasticUri));
             
-
-            IEnumerable<string> vertices = System.IO.File
-            .ReadAllLines("/Users/chinkit/00D2D-CRC/01-Projects/data61/github/stellar-search/search/src/test/resources/au/csiro/data61/stellar/search/epg/imdb-flat/imdb-vertices.json");
-
-            var docs = vertices.Select(v => JsonConvert.DeserializeObject(v));
-
-            // var result = client.IndexMany(docs,"imdb-v3");
-            // Console.WriteLine(result.DebugInformation);
             Console.WriteLine("Indexing documents into elasticsearch...");
             var waitHandle = new CountdownEvent(1);
 
-
-
-            var bulkAll = client.BulkAll(docs, b => b
+            var bulkAll = client.BulkAll(vertices, b => b
                 .Index("imdb-v4")
-                //.Type("my-console")
                 .BackOffRetries(2)
                 .BackOffTime("30s")
                 .RefreshOnCompleted(true)
-                .MaxDegreeOfParallelism(4)
-                .Size(2)
+                .MaxDegreeOfParallelism(2)
+                .Size(10000)
             );
 
             bulkAll.Subscribe(new BulkAllObserver(
-                onNext: (b) => {
-                     Console.Write("."); 
-                     },
-                onError: (e) => { throw e; },
+                onNext: (b) => { Console.Write(".");},
+                onError: (e) => { Console.WriteLine(e.Message); },
                 onCompleted: () =>  waitHandle.Signal()
             ));
             
             waitHandle.Wait();
             Console.WriteLine("Done.");
+
+            sw.Stop();
+            Console.WriteLine($"Ellapsed ms is {sw.ElapsedMilliseconds}");
 
             Console.ReadLine();
             
