@@ -7,6 +7,9 @@ services:
     image: chinkitp/elastic-server:latest
     ports:
       - "9200:9200"
+      - "5000:5000"
+    volumes:
+      - ./server/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
 
   client:
     build: 
@@ -17,5 +20,5 @@ services:
       - ./stackoverflow-sample:/graph-data
     depends_on:
       - elastic
-    #entrypoint: sh
+    entrypoint: sh
     tty: true
