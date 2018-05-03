@@ -11,20 +11,25 @@ namespace Ingestor
 {
     class Program
     {
+
+
+
         static void Main(string[] args)
         {
             // var filePath = "/graph-data";
             // var fileExtensionsToRead = "json";
             // var elasticUri = "http://elastic:9200";
-            var filePath = "./stackoverflow-sample/nodes";
-            var fileExtensionsToRead = ".json";
+            // var filePath = "./stackoverflow-sample/nodes";
+            // var fileExtensionsToRead = ".json";
             var elasticUri = "http://localhost:9200";
 
             Stopwatch sw = new Stopwatch();
             sw.Start();   
 
-            var vertices = FileReader.ReadLines(filePath,fileExtensionsToRead)
-                .Select(v => JsonConvert.DeserializeObject<EpgVertex>(v));
+            // var vertices = FileReader.ReadLines(filePath,fileExtensionsToRead)
+            //     .Select(v => JsonConvert.DeserializeObject<EpgVertex>(v));
+
+            var vertices = FileReader.GetDocuments(1000000,"questions");
 
             ElasticClient client = new ElasticClient(new Uri(elasticUri));
             
@@ -37,7 +42,7 @@ namespace Ingestor
                 .BackOffTime("30s")
                 .RefreshOnCompleted(true)
                 .MaxDegreeOfParallelism(2)
-                .Size(10000)
+                .Size(800)
             );
 
             bulkAll.Subscribe(new BulkAllObserver(
@@ -50,12 +55,14 @@ namespace Ingestor
             Console.WriteLine("Done.");
 
             sw.Stop();
-            Console.WriteLine($"Ellapsed ms is {sw.ElapsedMilliseconds}");
+            Console.WriteLine($"Ellapsed is {sw.ElapsedMilliseconds / 1000} seconds");
 
             Console.ReadLine();
             
            
         }
+
+
             
     }
 }
