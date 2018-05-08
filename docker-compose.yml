@@ -20,5 +20,5 @@ services:
     #  - ./stackoverflow-sample:/graph-data
     depends_on:
       - elastic
-    entrypoint: sh
+    # entrypoint: sh
     tty: true

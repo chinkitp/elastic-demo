@@ -11,7 +11,7 @@ namespace Ingestor
         {
             if(_words == null)
             {
-                _words = File.ReadAllLines("./client/src/ingestor/words.txt")
+                _words = File.ReadAllLines("./words.txt")
                     .Select(l => l.Split('\t').First())
                     .ToArray();
             }

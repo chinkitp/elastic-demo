@@ -14,7 +14,7 @@ namespace Ingestor
     {
         private static void Run(Options opts)
         {
-            var elasticUri = "http://localhost:9200";
+            var elasticUri = "http://elastic:9200";
 
             Stopwatch sw = new Stopwatch();
             sw.Start();   
