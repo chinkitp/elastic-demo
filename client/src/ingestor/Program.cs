@@ -3,7 +3,6 @@ using System.Collections;
 using Nest;
 using System.Threading;
 using System.Linq;
-using Newtonsoft.Json;
 using System.IO.MemoryMappedFiles;
 using System.Diagnostics;
 using CommandLine;
@@ -11,29 +10,21 @@ using System.Collections.Generic;
 
 namespace Ingestor
 {
-
     class Program
     {
         private static void Run(Options opts)
         {
-
-            // var filePath = "/graph-data";
-            // var fileExtensionsToRead = "json";
-            // var elasticUri = "http://elastic:9200";
-            //var filePath = "/Users/chinkit/00D2D-CRC/04-BigData/stackoverflow/Copy-1/nodes";
-            //var fileExtensionsToRead = ".json";
             var elasticUri = "http://localhost:9200";
 
             Stopwatch sw = new Stopwatch();
             sw.Start();   
 
-            // var vertices = FileReader.ReadLines(filePath,fileExtensionsToRead)
-            //     .Select(v => JsonConvert.DeserializeObject<EpgVertex>(v));
+            var vertices = EpgVertexFactory.GetDocuments(opts.NumberOfDocuments,"questions");
 
-            var vertices = FileReader.GetDocuments(opts.NumberOfDocuments,"questions");
-
+ 
             ElasticClient client = new ElasticClient(new Uri(elasticUri));
-            
+
+           
             Console.WriteLine("Indexing documents into elasticsearch...");
             var waitHandle = new CountdownEvent(1);
 

@@ -17,7 +17,7 @@ services:
     image: chinkitp/elastic-dotnet-client:latest
     volumes:
       - ./client/src:/code
-      - ./stackoverflow-sample:/graph-data
+    #  - ./stackoverflow-sample:/graph-data
     depends_on:
       - elastic
     entrypoint: sh
