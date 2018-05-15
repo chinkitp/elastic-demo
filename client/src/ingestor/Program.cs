@@ -7,7 +7,9 @@ using System.IO.MemoryMappedFiles;
 using System.Diagnostics;
 using CommandLine;
 using System.Collections.Generic;
+using System.IO;
 using Elasticsearch.Net;
+using Newtonsoft.Json;
 
 namespace Ingestor
 {
@@ -58,9 +60,46 @@ namespace Ingestor
 
         static void Main(string[] args)
         {
-            CommandLine.Parser.Default.ParseArguments<Options>(args)
-                .WithParsed<Options>(opts => Run(opts))
-                .WithNotParsed<Options>((errs) => Error(errs));           
+            var nodeLines = File.ReadAllLines(@".\..\..\..\..\..\..\stackoverflow-sample\all-nodes.json");
+            var edgeLines = File.ReadAllLines(@".\..\..\..\..\..\..\stackoverflow-sample\all-edges.json");
+
+            IEnumerable<Vertex> vertices = nodeLines.Select(JsonConvert.DeserializeObject<Node>)
+                .Select(NodeToVertex)
+                .ToList();
+
+
+            foreach (var edgeLine in edgeLines)
+            {
+                Edge edge = JsonConvert.DeserializeObject<Edge>(edgeLine);
+                var sourceVertex = vertices.Single(v => v.Id == edge.Source);
+                var targetVertex = vertices.Single(v => v.Id == edge.Target);
+
+                var forSource = EdgeToRelationShip(edge, targetVertex);
+                var forTarget = EdgeToRelationShip(edge, sourceVertex);
+                
+                sourceVertex.AddOutRelationship(forSource);
+                targetVertex.AddInRelationship(forTarget);
+            }
+
+
+
+            Console.WriteLine("Done");
+            Console.ReadLine();
+
+
+            //CommandLine.Parser.Default.ParseArguments<Options>(args)
+            //    .WithParsed<Options>(opts => Run(opts))
+            //    .WithNotParsed<Options>((errs) => Error(errs));           
+        }
+
+        private static Relationship EdgeToRelationShip(Edge e, Vertex v)
+        {
+            return new Relationship(e.Id, e.Meta.Label, e.Meta.Graphs, e.Data, v);
+        }
+
+        private static Vertex NodeToVertex(Node n)
+        {
+            return new Vertex(n.Id, n.Meta.Label, n.Meta.Graphs, n.Data);
         }
 
         private static void Error(IEnumerable<CommandLine.Error> errs)
