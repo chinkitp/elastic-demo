@@ -7,6 +7,7 @@ using System.IO.MemoryMappedFiles;
 using System.Diagnostics;
 using CommandLine;
 using System.Collections.Generic;
+using Elasticsearch.Net;
 
 namespace Ingestor
 {
@@ -14,7 +15,7 @@ namespace Ingestor
     {
         private static void Run(Options opts)
         {
-            var elasticUri = "http://elastic:9200";
+            var elasticUri = "http://localhost:9200";
 
             Stopwatch sw = new Stopwatch();
             sw.Start();   
@@ -28,13 +29,16 @@ namespace Ingestor
             Console.WriteLine("Indexing documents into elasticsearch...");
             var waitHandle = new CountdownEvent(1);
 
+        
+
             var bulkAll = client.BulkAll(vertices, b => b
+                .Refresh(Refresh.False)
                 .Index("imdb-v4")
                 .BackOffRetries(2)
                 .BackOffTime("30s")
-                .RefreshOnCompleted(true)
+                .RefreshOnCompleted(false)
                 .MaxDegreeOfParallelism(4)
-                .Size(1000)
+                .Size(1000)              
             );
 
             bulkAll.Subscribe(new BulkAllObserver(
@@ -59,7 +63,7 @@ namespace Ingestor
                 .WithNotParsed<Options>((errs) => Error(errs));           
         }
 
-        private static void Error(IEnumerable<Error> errs)
+        private static void Error(IEnumerable<CommandLine.Error> errs)
         {
             foreach (var err in errs)
             {

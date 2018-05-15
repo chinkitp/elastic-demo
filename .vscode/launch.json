@@ -10,7 +10,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/client/src/ingestor/bin/Debug/netcoreapp2.0/ingestor.dll",
-            "args": "-n 100000",
+            "args": "-n 3500000",
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false,

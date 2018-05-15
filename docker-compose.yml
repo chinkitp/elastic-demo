@@ -1,15 +1,15 @@
 ---
 version: '3.4'
 services:
-  elastic:
-    build:
-      context: ./server
-    image: chinkitp/elastic-server:latest
-    ports:
-      - "9200:9200"
-      - "5000:5000"
-    volumes:
-      - ./server/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+  # elastic:
+  #   build:
+  #     context: ./server
+  #   image: chinkitp/elastic-server:latest
+  #   ports:
+  #     - "9200:9200"
+  #     - "5000:5000"
+  #   volumes:
+  #     - ./server/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
 
   client:
     build: 
