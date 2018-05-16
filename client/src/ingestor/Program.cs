@@ -13,33 +13,11 @@ using Newtonsoft.Json;
 using System.Threading.Tasks.Dataflow;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using Ingestor.Model;
+using Ingestor.DataAccess;
 
 namespace Ingestor
 {
-    static class Nodes 
-    {
-        private static ConcurrentDictionary<string,Node> _nodes = new ConcurrentDictionary<string,Node>();
-        static Nodes()
-        {
-            Console.WriteLine("Starting to read nodes.");
-            var nodeLines = File.ReadAllLines(@"/Users/chinkit/00D2D-CRC/04-BigData/stackoverflow/step1/all-nodes.json");
-            ConcurrentBag<Node> nodes = new ConcurrentBag<Node>();
-            Parallel.ForEach(nodeLines, nodeLine =>{
-                var node = JsonConvert.DeserializeObject<Node>(nodeLine);
-                nodes.Add(node);
-            }); 
-            foreach (var node in nodes)
-            {
-                _nodes.AddOrUpdate(node.Id,node,(a,b)=>b);
-            }
-
-            Console.WriteLine("Nodes loaded");                  
-        }
-
-        public static IEnumerable<Node> GetAll() => (IEnumerable<Node>) _nodes.Values;
-
-        public static Node GetById(string id) => _nodes[id];
-    }
 
     class Program
     {
@@ -66,7 +44,7 @@ namespace Ingestor
             }  
             Console.WriteLine("Edges loaded");  
 
-            var nodes = Nodes.GetAll().GetEnumerator();
+            var nodes = DataAccess.Nodes.GetAll().GetEnumerator();
             while (nodes.MoveNext())
             {
                 var buffer = new List<Vertex>();
@@ -83,7 +61,7 @@ namespace Ingestor
                         {
                             foreach (var sourceEdges in l)
                             {
-                                var targetNode = Nodes.GetById(sourceEdges.Target);
+                                var targetNode = DataAccess.Nodes.GetById(sourceEdges.Target);
                                 if(targetNode != null)
                                 {
                                     var targetVertex = NodeToVertex(targetNode);
@@ -100,7 +78,7 @@ namespace Ingestor
                         {
                             foreach (var targetEdge in r)
                             {
-                                var sourceNode = Nodes.GetById(targetEdge.Source);
+                                var sourceNode = DataAccess.Nodes.GetById(targetEdge.Source);
                                 if(sourceNode != null)
                                 {
                                     var sourceVertex = NodeToVertex(sourceNode);
@@ -189,7 +167,7 @@ namespace Ingestor
 
         static void Main(string[] args)
         {
-            var n = Nodes.GetAll().ToList();
+            var n = DataAccess.Nodes.GetAll().ToList();
 
             // Create a BufferBlock<byte[]> object. This object serves as the 
             // target block for the producer and the source block for the consumer.
