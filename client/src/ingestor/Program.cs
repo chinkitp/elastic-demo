@@ -12,31 +12,121 @@ using Elasticsearch.Net;
 using Newtonsoft.Json;
 using System.Threading.Tasks.Dataflow;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace Ingestor
 {
+    static class Nodes 
+    {
+        private static ConcurrentDictionary<string,Node> _nodes = new ConcurrentDictionary<string,Node>();
+        static Nodes()
+        {
+            Console.WriteLine("Starting to read nodes.");
+            var nodeLines = File.ReadAllLines(@"/Users/chinkit/00D2D-CRC/04-BigData/stackoverflow/step1/all-nodes.json");
+            ConcurrentBag<Node> nodes = new ConcurrentBag<Node>();
+            Parallel.ForEach(nodeLines, nodeLine =>{
+                var node = JsonConvert.DeserializeObject<Node>(nodeLine);
+                nodes.Add(node);
+            }); 
+            foreach (var node in nodes)
+            {
+                _nodes.AddOrUpdate(node.Id,node,(a,b)=>b);
+            }
+
+            Console.WriteLine("Nodes loaded");                  
+        }
+
+        public static IEnumerable<Node> GetAll() => (IEnumerable<Node>) _nodes.Values;
+
+        public static Node GetById(string id) => _nodes[id];
+    }
+
     class Program
     {
-
-// Demonstrates the production end of the producer and consumer pattern.
-        static void Produce(ITargetBlock<byte[]> target)
+        static void Produce(ITargetBlock<List<Vertex>> target)
         {
-            // Create a Random object to generate random data.
-            Random rand = new Random();
+            ConcurrentDictionary<string,IEnumerable<Edge>> _sourceDictionary = new ConcurrentDictionary<string,IEnumerable<Edge>>();
+            ConcurrentDictionary<string,IEnumerable<Edge>> _targedDictionary = new ConcurrentDictionary<string,IEnumerable<Edge>>();
 
-            // In a loop, fill a buffer with random data and
-            // post the buffer to the target block.
-            for (int i = 0; i < 100; i++)
+            Console.WriteLine("Starting to load Edges"); 
+            var edgeLines = File.ReadAllLines(@"/Users/chinkit/00D2D-CRC/04-BigData/stackoverflow/step1/all-edges.json");
+            ConcurrentBag<Edge> edges = new ConcurrentBag<Edge>();
+            Parallel.ForEach(edgeLines, edgeLine =>{
+                var edge = JsonConvert.DeserializeObject<Edge>(edgeLine);
+                edges.Add(edge);
+            });   
+     
+            foreach (var item in  edges.GroupBy(e => e.Source, (a,b) => new{Source=a,Edges=b}))
             {
-                // Create an array to hold random byte data.
-                byte[] buffer = new byte[1024];
-
-                // Fill the buffer with random bytes.
-                rand.NextBytes(buffer);
-
-                // Post the result to the message block.
-                target.Post(buffer);
+                 _sourceDictionary.AddOrUpdate(item.Source,item.Edges,(a,b)=>b);
             }
+            foreach (var item in  edges.GroupBy(e => e.Target, (a,b) => new{Target=a,Edges=b}))
+            {
+                 _targedDictionary.AddOrUpdate(item.Target,item.Edges,(a,b)=>b);
+            }  
+            Console.WriteLine("Edges loaded");  
+
+            var nodes = Nodes.GetAll().GetEnumerator();
+            while (nodes.MoveNext())
+            {
+                var buffer = new List<Vertex>();
+                for (int i = 0; i < 10000; i++)
+                {
+                    var node = nodes.Current;
+                    
+                    var vertex = NodeToVertex(node);
+
+                    if(vertex != null)
+                    {
+                        var l = _sourceDictionary.GetValueOrDefault(vertex.Id);
+                        if(l != null)
+                        {
+                            foreach (var sourceEdges in l)
+                            {
+                                var targetNode = Nodes.GetById(sourceEdges.Target);
+                                if(targetNode != null)
+                                {
+                                    var targetVertex = NodeToVertex(targetNode);
+                                    var relationship = EdgeToRelationShip(sourceEdges,targetVertex);
+                                    vertex.AddOutRelationship(relationship);
+                                }
+                                
+                            }
+                        }
+
+
+                        var r = _targedDictionary.GetValueOrDefault(vertex.Id);
+                        if(r != null)
+                        {
+                            foreach (var targetEdge in r)
+                            {
+                                var sourceNode = Nodes.GetById(targetEdge.Source);
+                                if(sourceNode != null)
+                                {
+                                    var sourceVertex = NodeToVertex(sourceNode);
+                                    var relationship = EdgeToRelationShip(targetEdge,sourceVertex);
+                                    vertex.AddInRelationship(relationship);
+                                }
+                                
+                            }  
+                        }
+  
+
+                        
+                    }
+                  
+                    buffer.Add(vertex);                  
+                    
+                    if(!nodes.MoveNext())
+                    {
+                        break;
+                    }
+                    
+                }
+
+                target.Post(buffer);   
+            } 
+            
 
             // Set the target to the completed state to signal to the consumer
             // that no more data will be available.
@@ -44,22 +134,51 @@ namespace Ingestor
         }
 
          // Demonstrates the consumption end of the producer and consumer pattern.
-        static async Task<int> ConsumeAsync(ISourceBlock<byte[]> source)
+        static async Task<int> ConsumeAsync(ISourceBlock<List<Vertex>> source)
         {
             // Initialize a counter to track the number of bytes that are processed.
-            int bytesProcessed = 0;
+            int nodesProcessed = 0;
+            int batch = 0;
+
+            var elasticUri = "http://localhost:9200";           
+            ElasticClient client = new ElasticClient(new Uri(elasticUri));         
+            Console.WriteLine("Indexing documents into elasticsearch...");
 
             // Read from the source buffer until the source buffer has no 
             // available output data.
             while (await source.OutputAvailableAsync())
             {
-                byte[] data = source.Receive();
+                Stopwatch sw = new Stopwatch();
+                sw.Start(); 
+
+                List<Vertex> nodes = source.Receive();
+
+                 var waitHandle = new CountdownEvent(1);    
+
+                var bulkAll = client.BulkAll(nodes, b => b
+                    .Refresh(Refresh.False)
+                    .Index("sx-v3")
+                    .BackOffRetries(2)
+                    .BackOffTime("30s")
+                    .RefreshOnCompleted(false)
+                    .MaxDegreeOfParallelism(4)
+                    .Size(800)              
+                );
+
+                bulkAll.Subscribe(new BulkAllObserver(
+                    onNext: (r) => { },
+                    onError: (e) => { Console.WriteLine(e.Message); },
+                    onCompleted: () =>  waitHandle.Signal()
+                ));
+                
+                waitHandle.Wait();               
 
                 // Increment the count of bytes received.
-                bytesProcessed += data.Length;
+                nodesProcessed += nodes.Count;
+                Console.WriteLine($"Batch {batch++}     :   Documented {nodesProcessed} ellapsed is {sw.ElapsedMilliseconds / 1000} seconds");
             }
 
-            return bytesProcessed;
+            return nodesProcessed;
         }
 
 
@@ -70,9 +189,11 @@ namespace Ingestor
 
         static void Main(string[] args)
         {
+            var n = Nodes.GetAll().ToList();
+
             // Create a BufferBlock<byte[]> object. This object serves as the 
             // target block for the producer and the source block for the consumer.
-            var buffer = new BufferBlock<byte[]>();
+            var buffer = new BufferBlock<List<Vertex>>();
 
             // Start the consumer. The Consume method runs asynchronously. 
             var consumer = ConsumeAsync(buffer);
@@ -84,7 +205,7 @@ namespace Ingestor
             consumer.Wait();
 
             // Print the count of bytes processed to the console.
-            Console.WriteLine("Processed {0} bytes.", consumer.Result);
+            Console.WriteLine("Total processed {0} documents.", consumer.Result);
 
             /* 
 

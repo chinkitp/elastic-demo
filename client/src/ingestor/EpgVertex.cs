@@ -30,14 +30,14 @@ namespace Ingestor
         {
         }
 
-        public void AddInRelationship(IEnumerable<Relationship> inRelationships)
+        public void AddInRelationship(Relationship inRelationship)
         {
-            _ins.AddRange(inRelationships);
+            _ins.Add(inRelationship);
         }
 
-        public void AddOutRelationship(IEnumerable<Relationship> outRelationships)
+        public void AddOutRelationship(Relationship outRelationship)
         {
-            _outs.AddRange(outRelationships);
+            _outs.Add(outRelationship);
         }
 
         public IReadOnlyCollection<Relationship> In => (IReadOnlyCollection<Relationship>) _ins;
