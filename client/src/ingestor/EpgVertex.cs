@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-
+using Nest;
 
 namespace Ingestor
 {
@@ -55,6 +55,7 @@ namespace Ingestor
         }
     }
 
+    [ElasticsearchType(IdProperty = nameof(Id))]
     public class Node
     {
         public string Id { get; }

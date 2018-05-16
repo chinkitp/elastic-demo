@@ -8,7 +8,7 @@ namespace   Ingestor
 {
     public static class EpgVertexFactory
     {
-        private static string GetGuid()
+        public static string GetGuid()
         {
             return Convert.ToBase64String(Guid.NewGuid().ToByteArray())
             .Substring(0,22);
