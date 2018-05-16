@@ -1,0 +1,77 @@
+PUT sx-v3
+{
+    "mappings": {
+      "node": {
+        "properties": {
+          "id":{
+            "type": "keyword"
+          }
+        }, 
+        "dynamic_templates": [
+          {
+            "ignore_all_fields": {
+              "match_mapping_type": "*",
+              "mapping": {
+                "index": "false"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "settings": {
+      "index": {
+        "refresh_interval": "-1",
+        "number_of_replicas": "0"
+      }
+    }
+  }
+}
+
+PUT sx-v3
+{
+    "mappings": {
+      "node": {
+        "dynamic_templates": [
+          {
+            "ignore_all_fields": {
+              "match_mapping_type": "*",
+              "mapping": {
+                "index": "false"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "settings": {
+      "index": {
+        "refresh_interval": "-1",
+        "number_of_replicas": "0"
+      }
+    }
+  }
+}
+
+PUT sx-v3/_settings
+{
+      "index": {
+        "refresh_interval": "1s",
+        "number_of_replicas": "0"
+      } 
+}
+
+POST sx-v3/_refresh
+
+GET sx-v3/node/X95ZMbPucEWXUSXWe9Ah6A
+
+GET sx-v3/_search
+{
+  "query": {
+    "match": {
+      "id": "3GxZzmS1sU6QWWr9OVLA6A" 
+    }
+  }
+}
+
+GET sx-v3

@@ -23,21 +23,21 @@ namespace Ingestor
     public class Vertex : Epm
     {
         private readonly Epm _epm;
-        private IList<Relationship> _ins = new List<Relationship>();
-        private IList<Relationship> _outs = new List<Relationship>();
+        private List<Relationship> _ins = new List<Relationship>();
+        private List<Relationship> _outs = new List<Relationship>();
 
         public Vertex(string id, string label, string[] graphs, Dictionary<string, object> props) : base(id, label, graphs, props)
         {
         }
 
-        public void AddInRelationship(Relationship inRelationship)
+        public void AddInRelationship(IEnumerable<Relationship> inRelationships)
         {
-            _ins.Add(inRelationship);
+            _ins.AddRange(inRelationships);
         }
 
-        public void AddOutRelationship(Relationship outRelationship)
+        public void AddOutRelationship(IEnumerable<Relationship> outRelationships)
         {
-            _outs.Add(outRelationship);
+            _outs.AddRange(outRelationships);
         }
 
         public IReadOnlyCollection<Relationship> In => (IReadOnlyCollection<Relationship>) _ins;
