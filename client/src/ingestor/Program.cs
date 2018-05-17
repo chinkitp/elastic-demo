@@ -111,7 +111,7 @@ namespace Ingestor
                     .BackOffRetries(2)
                     .BackOffTime("30s")
                     .RefreshOnCompleted(false)
-                    .MaxDegreeOfParallelism(4)
+                    .MaxDegreeOfParallelism(16)
                     .Size(800)              
                 );
 
