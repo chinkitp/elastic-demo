@@ -13,7 +13,7 @@ namespace Ingestor.DataAccess
         static Nodes()
         {
             Console.WriteLine("Starting to read nodes.");
-            var nodeLines = File.ReadAllLines(@"/Users/chinkit/00D2D-CRC/04-BigData/stackoverflow/step1/all-nodes.json");
+            var nodeLines = File.ReadAllLines(AppSettings.Current.NodesFile);
             ConcurrentBag<Node> nodes = new ConcurrentBag<Node>();
             Parallel.ForEach(nodeLines, nodeLine =>{
                 var node = JsonConvert.DeserializeObject<Node>(nodeLine);
@@ -26,6 +26,8 @@ namespace Ingestor.DataAccess
 
             Console.WriteLine("Nodes loaded");                  
         }
+
+        public static void Load(){}
 
         public static IEnumerable<Node> GetAll() => (IEnumerable<Node>) _nodes.Values;
 
