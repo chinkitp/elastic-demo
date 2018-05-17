@@ -15,10 +15,11 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using Ingestor.Model;
 using Ingestor.DataAccess;
+using Microsoft.Extensions.Configuration;
+using System.Reflection;
 
 namespace Ingestor
 {
-
     class Program
     {
         static void Produce(ITargetBlock<List<Vertex>> target)
@@ -165,8 +166,12 @@ namespace Ingestor
 
         }
 
+        private static AppSettings _settings =  null;
+
         static void Main(string[] args)
         {
+            LoadAppSettings();
+
             var n = DataAccess.Nodes.GetAll().ToList();
 
             // Create a BufferBlock<byte[]> object. This object serves as the 
@@ -290,6 +295,19 @@ namespace Ingestor
             //CommandLine.Parser.Default.ParseArguments<Options>(args)
             //    .WithParsed<Options>(opts => Run(opts))
             //    .WithNotParsed<Options>((errs) => Error(errs));           
+        }
+
+        private static void LoadAppSettings()
+        {
+            // Adding JSON file into IConfiguration.
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location))
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
+            IConfigurationRoot configuration = builder.Build();
+
+            var settings = new AppSettings();
+            configuration.Bind(settings);
         }
 
         private static Relationship EdgeToRelationShip(Edge e, Vertex v)

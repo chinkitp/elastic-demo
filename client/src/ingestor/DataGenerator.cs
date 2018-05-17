@@ -33,4 +33,30 @@ namespace   Ingestor
     //                 {"short description", WordList.GetRandomWords(7)}
     //         });
     // }
+
+    //   public static class WordList
+    // {
+    //     static WordList()
+    //     {
+    //         if(_words == null)
+    //         {
+    //             _words = File.ReadAllLines("/Users/chinkit/00D2D-CRC/02-Dev/elastic-demo/client/src/ingestor/words.txt")
+    //                 .Select(l => l.Split('\t').First())
+    //                 .ToArray();
+    //         }
+    //     }
+
+    //     private static string[] _words = null;
+
+    //     public static string GetRandomWords(int count)
+    //     {
+    //         Random randNum = new Random();
+    //         IEnumerable<string> words = Enumerable
+    //             .Repeat(0, count)
+    //             .Select(i => randNum.Next(0, _words.Length))
+    //             .Select(r => _words[r]);
+
+    //         return String.Join(" ",words);           
+    //     }
+    // }
 }
