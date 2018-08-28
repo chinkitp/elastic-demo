@@ -16,6 +16,7 @@ using Ingestor.Model;
 using Ingestor.DataAccess;
 using Microsoft.Extensions.Configuration;
 using System.Reflection;
+using System.Text;
 
 namespace Ingestor
 {
@@ -103,25 +104,14 @@ namespace Ingestor
 
                 List<Vertex> nodes = source.Receive();
 
-                 var waitHandle = new CountdownEvent(1);    
-
-                var bulkAll = client.BulkAll(nodes, b => b
-                    .Refresh(Refresh.False)
-                    .Index("sx-step2")
-                    .BackOffRetries(2)
-                    .BackOffTime("30s")
-                    .RefreshOnCompleted(false)
-                    .MaxDegreeOfParallelism(16)
-                    .Size(800)              
-                );
-
-                bulkAll.Subscribe(new BulkAllObserver(
-                    onNext: (r) => { },
-                    onError: (e) => { Console.WriteLine(e.Message); },
-                    onCompleted: () =>  waitHandle.Signal()
-                ));
+                var sb = new StringBuilder();
+                foreach (var item in nodes)
+                {
+                    sb.AppendLine(JsonConvert.SerializeObject(item,Formatting.None));
+                }
                 
-                waitHandle.Wait();               
+                File.AppendAllText("/Users/chinkit/00D2D-CRC/04-BigData/stackoverflow/step2/full-graph.json",sb.ToString());
+             
 
                 // Increment the count of bytes received.
                 nodesProcessed += nodes.Count;
